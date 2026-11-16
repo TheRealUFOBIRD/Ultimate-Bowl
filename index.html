@@ -35,7 +35,20 @@
   .seg button{height:42px;border-radius:8px;border:0;background:var(--s2);color:var(--dim);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
   .seg button:hover{color:var(--txt)}
   .seg button.on{background:var(--a);color:#04121a}
-  #names{display:grid;gap:6px;margin-bottom:24px}
+  #names{display:grid;gap:6px;margin-bottom:24px;max-height:186px;overflow-y:auto}
+  #names,#rank,#roomPlayers,#roomList{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+  #names::-webkit-scrollbar,#rank::-webkit-scrollbar,#roomPlayers::-webkit-scrollbar,#roomList::-webkit-scrollbar{width:6px}
+  #names::-webkit-scrollbar-thumb,#rank::-webkit-scrollbar-thumb,#roomPlayers::-webkit-scrollbar-thumb,#roomList::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
+  .seg.many{grid-template-columns:repeat(6,1fr)}
+  .seg.many button{height:36px;font-size:14px}
+  .panel{position:relative}
+  .lang{position:absolute;top:30px;right:32px;display:flex;gap:2px;background:var(--s2);border-radius:8px;padding:2px}
+  .lang button{height:26px;padding:0 9px;border:0;border-radius:6px;background:none;color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .lang button.on{background:var(--a);color:#04121a}
+  .row.me{opacity:1}
+  .pname small{color:var(--a);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-left:-2px}
+  .sep{height:1px;background:var(--line);margin:1px 6px}
+  .more{font-size:11px;color:var(--dim);text-align:center;padding:1px 0 2px}
   .nm{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:8px;padding:0 12px;height:42px}
   .nm i{width:10px;height:10px;border-radius:50%;flex:none}
   .nm select{background:none;border:0;outline:0;color:var(--dim);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;text-align:right}
@@ -59,7 +72,7 @@
   .rl button{height:30px;padding:0 14px;border-radius:6px;border:0;background:var(--a);color:#04121a;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
   .empty{color:var(--dim);font-size:13px;padding:8px 0}
   .code{font-size:40px;font-weight:800;letter-spacing:.2em;line-height:1.1;margin:2px 0 8px;-webkit-user-select:text;user-select:text}
-  #roomPlayers{display:grid;gap:6px;margin:16px 0 20px}
+  #roomPlayers{display:grid;gap:6px;margin:16px 0 20px;max-height:234px;overflow-y:auto}
   .nm .pn{flex:1;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #netMsg{color:var(--gold)} #netMsg:empty{display:none}
   .row.gone .pname span{text-decoration:line-through}
@@ -120,7 +133,7 @@
 
   /* ---------- results ---------- */
   #results h2{font-size:26px;font-weight:800;letter-spacing:-.01em}
-  #rank{margin:20px 0 24px}
+  #rank{margin:20px 0 24px;max-height:50vh;overflow-y:auto}
   .rk{display:flex;align-items:center;gap:12px;height:48px;font-weight:600;border-top:1px solid var(--line)}
   .rk:last-child{border-bottom:1px solid var(--line)}
   .rk .pos{width:14px;color:var(--dim);font-size:13px}
@@ -148,32 +161,31 @@
 <body>
 <canvas id="c"></canvas>
 
-<div id="loader" class="layer"><div class="spin"></div><p id="loadMsg">Loading…</p></div>
+<div id="loader" class="layer"><div class="spin"></div><p id="loadMsg">…</p></div>
 
 <!-- MENU -->
 <div id="menu" class="layer center hidden" style="z-index:10">
   <div class="panel">
+    <div class="lang" id="lang"><button data-l="en">EN</button><button data-l="de">DE</button></div>
     <h1 class="logo">Ultimate <span>Bowl</span></h1>
-    <div class="tag">Ten-pin bowling for 1–4 players, local or online</div>
-    <div class="seg two" id="mode"><button data-m="local" class="on">Local</button><button data-m="online">Online</button></div>
+    <div class="tag" data-i="tag"></div>
+    <div class="seg two" id="mode"><button data-m="local" class="on" data-i="local"></button><button data-m="online" data-i="online"></button></div>
 
     <div id="vLocal">
-      <div class="lbl">Players</div>
-      <div class="seg" id="seg">
-        <button data-n="1" class="on">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button>
-      </div>
+      <div class="lbl" data-i="players"></div>
+      <div class="seg many" id="seg"></div>
       <div id="names"></div>
-      <button class="btn" id="startBtn">Start game</button>
+      <button class="btn" id="startBtn" data-i="start"></button>
     </div>
 
     <div id="vOnline" class="hidden">
-      <div class="lbl">You</div>
-      <div class="nm"><i style="background:var(--a)"></i><input id="myName" maxlength="10" placeholder="Your name" spellcheck="false" aria-label="Your name"><select id="myLb" aria-label="Ball weight" title="Ball weight"></select></div>
-      <div class="lbl" style="margin-top:16px">Create a room</div>
-      <div class="btns"><button class="btn" id="mkPublic">Public</button><button class="btn ghost" id="mkPrivate">Private</button></div>
-      <div class="lbl" style="margin-top:16px">Join with a code</div>
-      <div class="join"><input id="joinCode" maxlength="5" placeholder="CODE" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Room code"><button class="btn ghost" id="joinBtn">Join</button></div>
-      <div class="lbl" style="margin-top:16px">Public rooms</div>
+      <div class="lbl" data-i="you"></div>
+      <div class="nm"><i style="background:var(--a)"></i><input id="myName" maxlength="10" data-ip="yourName" spellcheck="false"><select id="myLb" data-it="ballWeight"></select></div>
+      <div class="lbl" style="margin-top:16px" data-i="createRoom"></div>
+      <div class="btns"><button class="btn" id="mkPublic" data-i="public"></button><button class="btn ghost" id="mkPrivate" data-i="private"></button></div>
+      <div class="lbl" style="margin-top:16px" data-i="joinCode"></div>
+      <div class="join"><input id="joinCode" maxlength="5" placeholder="CODE" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Code"><button class="btn ghost" id="joinBtn" data-i="join"></button></div>
+      <div class="lbl" style="margin-top:16px" data-i="publicRooms"></div>
       <div id="roomList"></div>
     </div>
 
@@ -182,11 +194,11 @@
       <div class="code" id="roomCode"></div>
       <div class="lbl" id="roomHelp"></div>
       <div id="roomPlayers"></div>
-      <div class="btns"><button class="btn ghost" id="leaveBtn">Leave</button><button class="btn" id="goBtn">Start game</button></div>
+      <div class="btns"><button class="btn ghost" id="leaveBtn" data-i="leave"></button><button class="btn" id="goBtn"></button></div>
     </div>
 
     <div class="how" id="netMsg"></div>
-    <div class="how" id="how">Drag the ball, flick forward and let go to throw.<br>Add spin with the slider, A / D or the mouse wheel.</div>
+    <div class="how" id="how" data-i="how"></div>
   </div>
 </div>
 
@@ -194,11 +206,11 @@
 <div id="hud" class="layer hidden">
   <div id="boardWrap"><div id="board"></div></div>
   <div id="tools">
-    <button id="muteBtn" title="Sound"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path id="sndOn" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
-    <button id="quitBtn" title="Back to menu"><svg viewBox="0 0 24 24"><path d="M3 12 12 4l9 8"/><path d="M6 10v9h12v-9"/></svg></button>
+    <button id="muteBtn" data-it="sound"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path id="sndOn" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
+    <button id="quitBtn" data-it="toMenu"><svg viewBox="0 0 24 24"><path d="M3 12 12 4l9 8"/><path d="M6 10v9h12v-9"/></svg></button>
   </div>
   <div id="chip"><i></i><div><div class="n"></div><div class="s"></div></div></div>
-  <div id="spin" class="off"><span class="sl">Spin</span><input type="range" id="spinIn" min="-100" max="100" step="5" value="0" aria-label="Spin"><b id="spinVal">None</b></div>
+  <div id="spin" class="off"><span class="sl" data-i="spin"></span><input type="range" id="spinIn" min="-100" max="100" step="5" value="0" data-it="spin"><b id="spinVal">None</b></div>
   <div id="hint"></div>
   <div id="stat"><div class="v"></div><div class="k"></div></div>
 </div>
@@ -211,7 +223,7 @@
     <h2 id="resTitle">Final scores</h2>
     <div class="tag" style="margin-bottom:0" id="resSub"></div>
     <div id="rank"></div>
-    <div class="btns"><button class="btn ghost" id="menuBtn">Menu</button><button class="btn" id="againBtn">Rematch</button></div>
+    <div class="btns"><button class="btn ghost" id="menuBtn" data-i="menu"></button><button class="btn" id="againBtn"></button></div>
   </div>
 </div>
 
@@ -243,7 +255,8 @@ const PITCH = LANE_W + 2 * GUT_W + DIV_W;        // distance between lane centre
 const BALL_R = 0.1085, BALL_MASS = 6.8;
 const PIN_H = 0.381;
 const HOUSE_W = 5 * PITCH + DIV_W;
-const COLORS = ['#2f7bff', '#ff3b5c', '#19c37d', '#ffb020'];
+const MAXP = 12;                                   // most players in one game, local or online
+const COLORS = ['#2f7bff', '#ff3b5c', '#19c37d', '#ffb020', '#b05cff', '#00c2d1', '#ff7a1a', '#ff5fb8', '#9bd13a', '#d9dde8', '#a0623a', '#4a5068'];
 const AIM_START = new THREE.Vector3(0, BALL_R, 1.9);
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -658,15 +671,75 @@ const tweens = [];
 const tween = (dur, fn) => new Promise(res => tweens.push({ t: 0, dur, fn, res }));
 const wait = ms => tween(ms, null);
 
+/* ---------- language ---------- */
+const I18N = {
+  en: {
+    loading: 'Loading…', tag: 'Ten-pin bowling for 1–12 players, local or online', local: 'Local', online: 'Online', players: 'Players', start: 'Start game',
+    how: 'Drag the ball, flick forward and let go to throw.<br>Add spin with the slider, A / D or the mouse wheel.',
+    you: 'You', yourName: 'Your name', ballWeight: 'Ball weight', createRoom: 'Create a room', public: 'Public', private: 'Private', joinCode: 'Join with a code', join: 'Join',
+    publicRooms: 'Public rooms', leave: 'Leave', menu: 'Menu', rematch: 'Rematch', spin: 'Spin', sound: 'Sound', toMenu: 'Back to menu', player: 'Player',
+    spinNone: 'None', spinLeft: 'Left', spinRight: 'Right', hint: '<b>Drag</b> the ball and <b>flick forward</b> to throw', hintFlick: '<b>Flick forward</b> (up) and let go to throw',
+    waitingFor: 'Waiting for <b>{n}</b>…', yourTurn: 'Your turn', youreUp: "you're up",
+    strike: 'STRIKE!', double: 'DOUBLE!', turkey: 'TURKEY!', inRow: '{n} in a row', spare: 'SPARE!', gutter: 'GUTTER', miss: 'MISS', pin: 'pin', pins: 'pins',
+    straight: 'Straight', hookL: 'Hook left', hookR: 'Hook right',
+    tie: "It's a tie!", wins: '{n} wins!', gameOver: 'Game over', finalScores: 'Final scores', great: 'Outstanding game', nice: 'Nice bowling', practise: 'Keep practising', leftTag: ' (left)',
+    waitHost: 'Waiting for host', waitPlayers: 'Waiting for players', everyoneLeft: 'Everyone left', connecting: 'Connecting…', joining: 'Joining…',
+    eLib: 'Could not load the multiplayer library. Check your connection.', eService: 'Could not reach the multiplayer service. Check your connection and try again.',
+    eCode: 'That code doesn’t look right. Room codes have 5 characters.', eNotFound: 'No open room found with that code.', eLostHost: 'Lost connection to the host.',
+    eRemoved: 'You are no longer in that room.', eClosed: 'The host closed the room.', eStarted: 'That game has already started.', eFull: 'That room is full.', eNoJoin: 'Could not join that room.',
+    roomPublic: 'Public room', roomPrivate: 'Private room', helpPublic: 'Anyone can join from the public list, or with this code.', helpPrivate: 'Share this code so others can join.',
+    youTag: 'you', hostTag: 'host', roomOf: '{n}’s room', noRooms: 'No public rooms right now. Create one!', shown: 'Players {a}–{b} of {n}', shownOthers: '{a}–{b} of {n} other players'
+  },
+  de: {
+    loading: 'Lädt…', tag: 'Bowling für 1–12 Spieler, lokal oder online', local: 'Lokal', online: 'Online', players: 'Spieler', start: 'Spiel starten',
+    how: 'Kugel ziehen, nach vorne schnippen und loslassen, um zu werfen.<br>Drall mit dem Regler, A / D oder dem Mausrad einstellen.',
+    you: 'Du', yourName: 'Dein Name', ballWeight: 'Kugelgewicht', createRoom: 'Raum erstellen', public: 'Öffentlich', private: 'Privat', joinCode: 'Mit Code beitreten', join: 'Beitreten',
+    publicRooms: 'Öffentliche Räume', leave: 'Verlassen', menu: 'Menü', rematch: 'Revanche', spin: 'Drall', sound: 'Ton', toMenu: 'Zurück zum Menü', player: 'Spieler',
+    spinNone: 'Kein', spinLeft: 'Links', spinRight: 'Rechts', hint: '<b>Ziehe</b> die Kugel und <b>schnippe nach vorne</b>, um zu werfen', hintFlick: '<b>Nach vorne schnippen</b> (hoch) und loslassen, um zu werfen',
+    waitingFor: 'Warte auf <b>{n}</b>…', yourTurn: 'Du bist dran', youreUp: 'ist dran',
+    strike: 'STRIKE!', double: 'DOPPEL!', turkey: 'TURKEY!', inRow: '{n} in Folge', spare: 'SPARE!', gutter: 'RINNE', miss: 'DANEBEN', pin: 'Pin', pins: 'Pins',
+    straight: 'Gerade', hookL: 'Linksdrall', hookR: 'Rechtsdrall',
+    tie: 'Unentschieden!', wins: '{n} gewinnt!', gameOver: 'Spiel vorbei', finalScores: 'Endstand', great: 'Herausragendes Spiel', nice: 'Gut gebowlt', practise: 'Weiter üben', leftTag: ' (weg)',
+    waitHost: 'Warte auf Host', waitPlayers: 'Warte auf Spieler', everyoneLeft: 'Alle sind weg', connecting: 'Verbinde…', joining: 'Trete bei…',
+    eLib: 'Die Mehrspieler-Bibliothek konnte nicht geladen werden. Prüfe deine Verbindung.', eService: 'Der Mehrspieler-Dienst ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.',
+    eCode: 'Der Code stimmt nicht. Raumcodes haben 5 Zeichen.', eNotFound: 'Kein offener Raum mit diesem Code gefunden.', eLostHost: 'Verbindung zum Host verloren.',
+    eRemoved: 'Du bist nicht mehr in diesem Raum.', eClosed: 'Der Host hat den Raum geschlossen.', eStarted: 'Dieses Spiel hat bereits begonnen.', eFull: 'Dieser Raum ist voll.', eNoJoin: 'Beitritt nicht möglich.',
+    roomPublic: 'Öffentlicher Raum', roomPrivate: 'Privater Raum', helpPublic: 'Jeder kann über die öffentliche Liste oder mit diesem Code beitreten.', helpPrivate: 'Teile diesen Code, damit andere beitreten können.',
+    youTag: 'du', hostTag: 'Host', roomOf: 'Raum von {n}', noRooms: 'Gerade keine öffentlichen Räume. Erstelle einen!', shown: 'Spieler {a}–{b} von {n}', shownOthers: '{a}–{b} von {n} anderen Spielern'
+  }
+};
+let LANG = (() => {
+  try { const s = localStorage.getItem('ub_lang'); if (s === 'en' || s === 'de') return s; } catch (_) {}
+  return (navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en';
+})();
+function t(k, v) { let s = I18N[LANG][k] ?? I18N.en[k] ?? k; if (v) for (const key in v) s = s.replaceAll('{' + key + '}', v[key]); return s; }
+// ball weights are stored in pounds; German shows them in kilograms
+const wLabel = lb => (LANG === 'de' ? (lb * 0.4536).toFixed(1).replace('.', ',') + ' kg' : lb + ' lb');
+const wOptions = sel => WEIGHTS.map(w => `<option value="${w}"${w === sel ? ' selected' : ''}>${wLabel(w)}</option>`).join('');
+const DEFAULT_NAME = /^(Player|Spieler) \d+$/;
+function applyLang() {                                 // (re)write every piece of visible text in the current language
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i]').forEach(el => { el.innerHTML = t(el.dataset.i); });
+  document.querySelectorAll('[data-ip]').forEach(el => { el.placeholder = t(el.dataset.ip); el.setAttribute('aria-label', t(el.dataset.ip)); });
+  document.querySelectorAll('[data-it]').forEach(el => { el.title = t(el.dataset.it); el.setAttribute('aria-label', t(el.dataset.it)); });
+  document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.l === LANG));
+  $('#myLb').innerHTML = wOptions(+$('#myLb').value || 14);
+  renderNames(); setSpin(+spinIn.value); renderLobby(); renderRoom();
+  $('#netMsg').textContent = netMsgKey ? t(netMsgKey) : '';
+}
+$('#loadMsg').textContent = t('loading');
+
 /* ---------- UI ---------- */
 const ui = { menu: $('#menu'), hud: $('#hud'), board: $('#board'), banner: $('#banner'), results: $('#results'), hint: $('#hint'), stat: $('#stat'), chip: $('#chip') };
 let nPlayers = 1;
 function renderNames() {
   const old = [...document.querySelectorAll('#names input')].map(i => i.value);
   const oldW = [...document.querySelectorAll('#names select')].map(s => +s.value);
-  $('#names').innerHTML = Array.from({ length: nPlayers }, (_, i) =>
-    `<div class="nm"><i style="background:${COLORS[i]}"></i><input maxlength="10" value="${esc(old[i] ?? 'Player ' + (i + 1))}" spellcheck="false" aria-label="Player ${i + 1} name">` +
-    `<select aria-label="Player ${i + 1} ball weight" title="Ball weight">${WEIGHTS.map(w => `<option value="${w}"${w === (oldW[i] ?? 14) ? ' selected' : ''}>${w} lb</option>`).join('')}</select></div>`).join('');
+  $('#names').innerHTML = Array.from({ length: nPlayers }, (_, i) => {
+    const name = old[i] === undefined || DEFAULT_NAME.test(old[i]) ? t('player') + ' ' + (i + 1) : old[i];   // untouched default names follow the language
+    return `<div class="nm"><i style="background:${COLORS[i]}"></i><input maxlength="10" value="${esc(name)}" spellcheck="false" aria-label="${t('player')} ${i + 1}">` +
+      `<select aria-label="${t('ballWeight')}" title="${t('ballWeight')}">${wOptions(oldW[i] ?? 14)}</select></div>`;
+  }).join('');
 }
 const WEIGHTS = [8, 10, 12, 14, 16], LB = 0.4536;        // ball weight in pounds, chosen per player
 const readPlayers = () => [...document.querySelectorAll('#names .nm')].map(r => ({ name: r.querySelector('input').value, lb: +r.querySelector('select').value }));
@@ -674,19 +747,32 @@ $('#seg').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   nPlayers = +b.dataset.n; document.querySelectorAll('#seg button').forEach(x => x.classList.toggle('on', x === b)); renderNames();
 });
+$('#seg').innerHTML = Array.from({ length: MAXP }, (_, i) => `<button data-n="${i + 1}"${i ? '' : ' class="on"'}>${i + 1}</button>`).join('');
 renderNames();
 
+// online, your own row is pinned on top; below it (and in local games) a window of 4 rows follows whoever is up
+const BOARD_ROWS = 4;
 function renderBoard() {
-  ui.board.innerHTML = G.players.map((p, pi) => {
+  const mine = G.online ? G.players.findIndex(p => p.id === NET.id) : -1;
+  const order = G.players.map((_, i) => i).filter(i => i !== mine);
+  const n = order.length;
+  const focus = Math.max(0, order.findIndex(i => i >= Math.max(G.cur, 0)));   // the player up, or (on your turn) the one after you
+  const from = n <= BOARD_ROWS ? 0 : clamp(focus - 1, 0, n - BOARD_ROWS), to = Math.min(n, from + BOARD_ROWS);
+  const more = n > BOARD_ROWS ? `<div class="more">${t(mine >= 0 ? 'shownOthers' : 'shown', { a: from + 1, b: to, n })}</div>` : '';
+  ui.board.innerHTML = (mine >= 0 ? boardRow(mine, true) + '<div class="sep"></div>' : '') + order.slice(from, to).map(pi => boardRow(pi)).join('') + more;
+  fitBoard();
+}
+function boardRow(pi, me = false) {
+  const p = G.players[pi];
+  {
     const s = scoreFrames(p.rolls), cur = pi === G.cur && G.state !== 'over';
     const cells = s.frames.map((fr, f) => {
       const n = f === 9 ? 3 : 2, mk = [];
       for (let k = 0; k < n; k++) { const v = fr.marks[k] ?? ''; mk.push(`<b class="${v === 'X' ? 'x' : v === '/' ? 's' : ''}">${v}</b>`); }
       return `<div class="fr${f === 9 ? ' t' : ''}${cur && f === G.frame ? ' act' : ''}"><div class="mk">${mk.join('')}</div><div class="cm">${fr.cum ?? ''}</div></div>`;
     }).join('');
-    return `<div class="row${cur ? ' cur' : ''}${p.gone ? ' gone' : ''}"><div class="pname"><i style="background:${p.color}"></i><span>${esc(p.name)}</span></div>${cells}<div class="tot">${s.total}</div></div>`;
-  }).join('');
-  fitBoard();
+    return `<div class="row${cur ? ' cur' : ''}${me ? ' me' : ''}${p.gone ? ' gone' : ''}"><div class="pname"><i style="background:${p.color}"></i><span>${esc(p.name)}</span>${me ? `<small>${t('youTag')}</small>` : ''}</div>${cells}<div class="tot">${s.total}</div></div>`;
+  }
 }
 function fitBoard() {
   ui.board.style.transform = '';
@@ -706,14 +792,13 @@ function banner(text, sub = '', cls = '') {
   void b.offsetWidth; b.classList.add('show');
 }
 function showHint(html) { if (html) ui.hint.innerHTML = html; ui.hint.style.opacity = html === null ? 0 : 1; }
-const HINT = '<b>Drag</b> the ball and <b>flick forward</b> to throw';
 let hintSeen = false;                                // the how-to hint only shows until the first throw
 const MAX_SPIN = 34;
 const spinIn = $('#spinIn'), spinUI = $('#spin');
 let spinSet = 0;                                     // rad/s about the travel axis, + hooks left
 function setSpin(v) {
   v = clamp(Math.round(v / 5) * 5, -100, 100); spinIn.value = v; spinSet = -v / 100 * MAX_SPIN;
-  $('#spinVal').textContent = v === 0 ? 'None' : `${v < 0 ? 'Left' : 'Right'} ${Math.abs(v)}%`;
+  $('#spinVal').textContent = v === 0 ? t('spinNone') : `${t(v < 0 ? 'spinLeft' : 'spinRight')} ${Math.abs(v)}%`;
 }
 spinIn.addEventListener('input', () => setSpin(+spinIn.value));
 spinUI.addEventListener('click', e => { const d = e.target.dataset?.d; if (d) setSpin(+spinIn.value + +d); });
@@ -734,7 +819,7 @@ const rollSeq = () => G.players.reduce((n, p) => n + p.rolls.length, 0);     // 
 function startGame(list, online = false) {
   G.sess++;
   G.online = online;
-  G.players = list.map((p, i) => ({ id: p.id, name: (p.name || '').trim() || 'Player ' + (i + 1), lb: p.lb || 14, color: COLORS[i], rolls: [], streak: 0, gone: false }));
+  G.players = list.map((p, i) => ({ id: p.id, name: (p.name || '').trim() || t('player') + ' ' + (i + 1), lb: p.lb || 14, color: COLORS[i], rolls: [], streak: 0, gone: false }));
   G.cur = 0; G.frame = 0; G.ball = 0; G.fresh = true;
   tweens.length = 0;
   resetPins(true); pins.forEach(p => p.drop = 0); sweeper.position.y = .95;
@@ -753,10 +838,10 @@ function beginTurn(announce) {
   aimPos.copy(AIM_START); aimTarget.copy(AIM_START);
   ballMesh.position.copy(aimPos); ballMesh.quaternion.set(-.45, 0, 0, .89).normalize(); ballMesh.visible = true;
   renderBoard(); renderChip(); ui.stat.style.opacity = 0;
-  showHint(mine ? (hintSeen ? null : HINT) : `Waiting for <b>${esc(p.name)}</b>…`);
+  showHint(mine ? (hintSeen ? null : t('hint')) : t('waitingFor', { n: esc(p.name) }));
   spinUI.classList.toggle('off', !mine); canvas.style.cursor = mine ? '' : 'default';
   if (announce) setSpin(0);
-  if (announce) { banner(G.online && mine ? 'Your turn' : p.name, G.online && mine ? '' : "you're up", 'turn'); tone(660, 0, .18, .12); tone(880, .1, .25, .12); }
+  if (announce) { banner(G.online && mine ? t('yourTurn') : p.name, G.online && mine ? '' : t('youreUp'), 'turn'); tone(660, 0, .18, .12); tone(880, .1, .25, .12); }
 }
 // move on to the next player who is still in the game; true when the game is over
 function advance() {
@@ -786,7 +871,7 @@ function throwBall(speed, angle, spin, loft = false, remote = false) {
   G.state = 'roll';
   showHint(null); spinUI.classList.add('off'); if (!remote) hintSeen = true;
   ui.stat.querySelector('.v').innerHTML = `${(speed * 3.6).toFixed(0)}<small>km/h</small>`;
-  ui.stat.querySelector('.k').textContent = Math.abs(spin) < 1.5 ? 'Straight' : spin > 0 ? 'Hook left' : 'Hook right';
+  ui.stat.querySelector('.k').textContent = t(Math.abs(spin) < 1.5 ? 'straight' : spin > 0 ? 'hookL' : 'hookR');
   ui.stat.style.opacity = 1;
 }
 // remote = the thrower's result in an online game ({k: pins knocked, p: pins left standing}); it overrides the local simulation
@@ -801,13 +886,13 @@ async function resolveRoll(remote) {
 
   if (cleared && G.fresh) {
     p.streak++;
-    banner(p.streak >= 3 ? 'TURKEY!' : p.streak === 2 ? 'DOUBLE!' : 'STRIKE!', p.streak >= 3 ? `${p.streak} in a row` : '', 'gold');
+    banner(t(p.streak >= 3 ? 'turkey' : p.streak === 2 ? 'double' : 'strike'), p.streak >= 3 ? t('inRow', { n: p.streak }) : '', 'gold');
     jingle([523, 659, 784, 1047, 1319], .09, .22);
   } else {
     p.streak = 0;
-    if (cleared) { banner('SPARE!', '', 'cyan'); jingle([523, 784, 1047], .1, .2); }
-    else if (knocked === 0) { banner(roll.gutter ? 'GUTTER' : 'MISS', '', ''); tone(180, 0, .4, .2, 'sawtooth'); }
-    else banner(String(knocked), knocked === 1 ? 'pin' : 'pins', '');
+    if (cleared) { banner(t('spare'), '', 'cyan'); jingle([523, 784, 1047], .1, .2); }
+    else if (knocked === 0) { banner(t(roll.gutter ? 'gutter' : 'miss'), '', ''); tone(180, 0, .4, .2, 'sawtooth'); }
+    else banner(String(knocked), t(knocked === 1 ? 'pin' : 'pins'), '');
   }
 
   let reset = true, next = true;                       // reset = full rack
@@ -845,12 +930,12 @@ function gameOver() {
   renderBoard(); ui.chip.style.visibility = 'hidden'; ui.stat.style.opacity = 0; showHint(null); spinUI.classList.add('off');
   const rank = G.players.map(p => ({ p, s: scoreFrames(p.rolls).total })).sort((a, b) => b.s - a.s);
   const top = rank[0].s, multi = rank.length > 1;
-  $('#resTitle').textContent = multi ? (rank.filter(r => r.s === top).length > 1 ? "It's a tie!" : `${rank[0].p.name} wins!`) : 'Game over';
-  $('#resSub').textContent = multi ? 'Final scores' : (top >= 200 ? 'Outstanding game' : top >= 120 ? 'Nice bowling' : 'Keep practising');
+  $('#resTitle').textContent = multi ? (rank.filter(r => r.s === top).length > 1 ? t('tie') : t('wins', { n: rank[0].p.name })) : t('gameOver');
+  $('#resSub').textContent = t(multi ? 'finalScores' : top >= 200 ? 'great' : top >= 120 ? 'nice' : 'practise');
   $('#rank').innerHTML = rank.map((r, i) =>
-    `<div class="rk${r.s === top ? ' win' : ''}"><span class="pos">${i + 1}</span><i style="background:${r.p.color}"></i><span class="nm2">${esc(r.p.name)}${r.p.gone ? ' (left)' : ''}</span><span class="sc">${r.s}</span></div>`).join('');
+    `<div class="rk${r.s === top ? ' win' : ''}"><span class="pos">${i + 1}</span><i style="background:${r.p.color}"></i><span class="nm2">${esc(r.p.name)}${r.p.gone ? t('leftTag') : ''}</span><span class="sc">${r.s}</span></div>`).join('');
   const again = $('#againBtn');
-  again.disabled = G.online && !NET.host; again.textContent = G.online && !NET.host ? 'Waiting for host' : 'Rematch';
+  again.disabled = G.online && !NET.host; again.textContent = t(G.online && !NET.host ? 'waitHost' : 'rematch');
   ui.results.classList.remove('hidden');
   jingle([523, 659, 784, 659, 784, 1047], .13, .2);
 }
@@ -880,10 +965,11 @@ const CODE_SETS = ['ABCDEFGH', 'JKLMNPQR', 'STUVWXYZ'], CODE_REST = 'ABCDEFGHJKL
 const TOPIC = 'ultimatebowl/v1/';
 const NET = { id: Math.random().toString(36).slice(2, 10), client: null, bi: -1, room: null, host: false, hostId: null, joined: false,
   players: [], seen: new Map(), lobby: new Map(), pThrow: null, pResult: null, timers: [], lastAim: 0 };
-const netMsg = t => { $('#netMsg').textContent = t || ''; };
+let netMsgKey = '';
+const netMsg = k => { netMsgKey = k || ''; $('#netMsg').textContent = netMsgKey ? t(netMsgKey) : ''; };
 const roomTopic = () => TOPIC + 'room/' + NET.room.code;
 const brokerOf = code => CODE_SETS.findIndex(s => s.includes(code[0]));
-const me = () => ({ id: NET.id, name: ($('#myName').value.trim() || 'Player').slice(0, 10), lb: +$('#myLb').value || 14 });
+const me = () => ({ id: NET.id, name: ($('#myName').value.trim() || t('player')).slice(0, 10), lb: +$('#myLb').value || 14 });
 function genCode() { let c = CODE_SETS[NET.bi][Math.random() * 8 | 0]; for (let i = 0; i < 4; i++) c += CODE_REST[Math.random() * CODE_REST.length | 0]; return c; }
 function netSend(t, data = {}, qos = 0) { if (NET.client && NET.room) NET.client.publish(roomTopic(), JSON.stringify({ t, f: NET.id, ...data }), { qos }); }
 function netEvery(ms, fn) { NET.timers.push(setInterval(fn, ms)); }
@@ -892,7 +978,7 @@ function netClearTimers() { NET.timers.forEach(clearInterval); NET.timers = []; 
 function loadMqtt() {
   return window.mqtt ? Promise.resolve() : new Promise((res, rej) => {
     const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js';
-    s.onload = res; s.onerror = () => rej(new Error('lib')); document.head.appendChild(s);
+    s.onload = res; s.onerror = () => rej(new Error('eLib')); document.head.appendChild(s);
   });
 }
 function tryBroker(i) {
@@ -908,16 +994,16 @@ function tryBroker(i) {
   });
 }
 async function netConnect(bi) {
-  try { await loadMqtt(); } catch (_) { throw new Error('Could not load the multiplayer library. Check your connection.'); }
+  try { await loadMqtt(); } catch (_) { throw new Error('eLib'); }
   for (const i of (bi === undefined ? [0, 1, 2] : [bi])) { try { await tryBroker(i); return; } catch (_) {} }
-  throw new Error('Could not reach the multiplayer service. Check your connection and try again.');
+  throw new Error('eService');
 }
 const connectedBroker = () => (NET.client && NET.client.connected ? NET.bi : undefined);
 
 /* ---------- rooms ---------- */
 async function createRoom(pub) {
   initAudio();
-  try { netMsg('Connecting…'); await netConnect(connectedBroker()); } catch (e) { return netMsg(e.message); }
+  try { netMsg('connecting'); await netConnect(connectedBroker()); } catch (e) { return netMsg(e.message); }
   NET.room = { code: genCode(), pub, started: false }; NET.host = true; NET.hostId = NET.id; NET.joined = true; NET.players = [me()]; NET.seen.clear();
   NET.client.subscribe(roomTopic(), { qos: 1 });
   enterRoom(); hostBroadcast();
@@ -926,13 +1012,13 @@ async function joinRoom(code) {
   initAudio();
   code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const bi = code.length === 5 ? brokerOf(code) : -1;
-  if (bi < 0) return netMsg('That code doesn’t look right. Room codes have 5 characters.');
-  try { netMsg('Joining…'); await netConnect(bi); } catch (e) { return netMsg(e.message); }
+  if (bi < 0) return netMsg('eCode');
+  try { netMsg('joining'); await netConnect(bi); } catch (e) { return netMsg(e.message); }
   NET.room = { code, pub: false, started: false }; NET.host = false; NET.hostId = null; NET.joined = false; NET.players = []; NET.seen.clear();
   NET.client.subscribe(roomTopic(), { qos: 1 });
   const t0 = Date.now();
   netClearTimers();
-  netEvery(1200, () => { if (NET.joined) return; if (Date.now() - t0 > 9000) return leaveRoom('No open room found with that code.'); netSend('hello', me()); });
+  netEvery(1200, () => { if (NET.joined) return; if (Date.now() - t0 > 9000) return leaveRoom('eNotFound'); netSend('hello', me()); });
   netSend('hello', me());
 }
 function enterRoom() {                                 // host and guests: heartbeat + presence
@@ -943,7 +1029,7 @@ function enterRoom() {                                 // host and guests: heart
     const now = Date.now(), last = id => NET.seen.get(id) || now;
     if (!NET.room.started) {
       if (NET.host) { NET.players = NET.players.filter(p => p.id === NET.id || now - last(p.id) < 12000); hostBroadcast(); }
-      else if (now - last(NET.hostId) > 12000) leaveRoom('Lost connection to the host.');
+      else if (now - last(NET.hostId) > 12000) leaveRoom('eLostHost');
     } else for (const p of G.players) if (!p.gone && p.id !== NET.id && now - last(p.id) > 20000) markGone(p.id);
   });
   showView('room'); renderRoom(); netMsg('');
@@ -962,7 +1048,7 @@ function hostBroadcast() {
 function hostStart() {
   if (!NET.host || !NET.room) return;
   if (G.online) NET.players = NET.players.filter(p => !G.players.find(g => g.id === p.id)?.gone);   // rematch: drop players who left
-  if (NET.players.length < 2) { if (G.online) { $('#againBtn').disabled = true; $('#againBtn').textContent = 'Everyone left'; } return; }
+  if (NET.players.length < 2) { if (G.online) { $('#againBtn').disabled = true; $('#againBtn').textContent = t('everyoneLeft'); } return; }
   netSend('start', { players: NET.players }, 1);
   lobbyPublish(true);
   netBegin(NET.players);
@@ -971,7 +1057,7 @@ function netBegin(players) {
   NET.room.started = true; NET.pThrow = NET.pResult = null;
   const now = Date.now(); players.forEach(p => NET.seen.set(p.id, now));
   NET.players = players;
-  startGame(players.slice(0, 4), true);
+  startGame(players.slice(0, MAXP), true);
 }
 function leaveRoom(msg) {
   if (NET.room) {
@@ -996,7 +1082,7 @@ const num = (v, a, b, d) => (Number.isFinite(+v) ? clamp(+v, a, b) : d);
 function onNet(topic, m) {
   if (topic.startsWith(TOPIC + 'lobby/')) {
     if (typeof m.code !== 'string') return;
-    if (m.gone) NET.lobby.delete(m.code); else NET.lobby.set(m.code, { code: m.code, host: String(m.host || 'Player').slice(0, 10), n: num(m.n, 1, 4, 1), at: Date.now() });
+    if (m.gone) NET.lobby.delete(m.code); else NET.lobby.set(m.code, { code: m.code, host: String(m.host || 'Player').slice(0, 10), n: num(m.n, 1, MAXP, 1), at: Date.now() });
     return renderLobby();
   }
   if (!NET.room || topic !== roomTopic() || m.f === NET.id || typeof m.f !== 'string') return;
@@ -1004,9 +1090,9 @@ function onNet(topic, m) {
   switch (m.t) {
     case 'hello': {
       if (!NET.host || typeof m.id !== 'string' || m.id !== m.f) break;
-      if (NET.room.started) { netSend('deny', { to: m.id, why: 'That game has already started.' }); break; }
+      if (NET.room.started) { netSend('deny', { to: m.id, why: 'eStarted' }); break; }
       const i = NET.players.findIndex(p => p.id === m.id);
-      if (i < 0 && NET.players.length >= 4) { netSend('deny', { to: m.id, why: 'That room is full.' }); break; }
+      if (i < 0 && NET.players.length >= MAXP) { netSend('deny', { to: m.id, why: 'eFull' }); break; }
       const p = { id: m.id, name: String(m.name || 'Player').slice(0, 10), lb: WEIGHTS.includes(m.lb) ? m.lb : 14 };
       if (i < 0) NET.players.push(p); else NET.players[i] = p;
       hostBroadcast(); break;
@@ -1014,16 +1100,16 @@ function onNet(topic, m) {
     case 'room':
       if (NET.host || (NET.hostId && m.f !== NET.hostId) || !Array.isArray(m.players)) break;
       if (m.players.some(p => p && p.id === NET.id)) {
-        NET.hostId = m.f; NET.players = m.players.slice(0, 4); NET.room.pub = !!m.pub;
+        NET.hostId = m.f; NET.players = m.players.slice(0, MAXP); NET.room.pub = !!m.pub;
         if (!NET.joined) { NET.joined = true; enterRoom(); } else if (!NET.room.started) renderRoom();
-      } else if (NET.joined && !NET.room.started) leaveRoom('You are no longer in that room.');
+      } else if (NET.joined && !NET.room.started) leaveRoom('eRemoved');
       break;
-    case 'deny': if (m.to === NET.id && !NET.joined) leaveRoom(String(m.why || 'Could not join that room.')); break;
+    case 'deny': if (m.to === NET.id && !NET.joined) leaveRoom(typeof m.why === 'string' && m.why[0] === 'e' && m.why in I18N.en ? m.why : 'eNoJoin'); break;
     case 'start': if (m.f === NET.hostId && NET.joined && Array.isArray(m.players) && m.players.some(p => p && p.id === NET.id)) netBegin(m.players); break;
     case 'leave':
       if (NET.room.started) { if (G.online) markGone(m.f); }
       else if (NET.host) { NET.players = NET.players.filter(p => p.id !== m.f); hostBroadcast(); }
-      else if (m.f === NET.hostId) leaveRoom('The host closed the room.');
+      else if (m.f === NET.hostId) leaveRoom('eClosed');
       break;
     case 'aim':                                        // the thrower moving the ball around before the throw
       if (G.online && G.state === 'aim' && G.players[G.cur]?.id === m.f) aimTarget.set(num(m.x, -.5, .5, 0), BALL_R, num(m.z, .5, 2.6, 1.9));
@@ -1081,26 +1167,25 @@ function renderLobby() {
   const now = Date.now(); for (const [c, r] of NET.lobby) if (now - r.at > 8000) NET.lobby.delete(c);
   const rooms = [...NET.lobby.values()].filter(r => !NET.room || r.code !== NET.room.code);
   $('#roomList').innerHTML = rooms.length
-    ? rooms.map(r => `<div class="rl"><span>${esc(r.host)}’s room <small>· ${r.n}/4</small></span><button data-code="${esc(r.code)}">Join</button></div>`).join('')
-    : '<div class="empty">No public rooms right now. Create one!</div>';
+    ? rooms.map(r => `<div class="rl"><span>${t('roomOf', { n: esc(r.host) })} <small>· ${r.n}/${MAXP}</small></span><button data-code="${esc(r.code)}">${t('join')}</button></div>`).join('')
+    : `<div class="empty">${t('noRooms')}</div>`;
 }
 function renderRoom() {
   if (!NET.room) return;
-  $('#roomKind').textContent = NET.room.pub ? 'Public room' : 'Private room';
+  $('#roomKind').textContent = t(NET.room.pub ? 'roomPublic' : 'roomPrivate');
   $('#roomCode').textContent = NET.room.code;
-  $('#roomHelp').textContent = NET.room.pub ? 'Anyone can join from the public list, or with this code.' : 'Share this code so others can join.';
+  $('#roomHelp').textContent = t(NET.room.pub ? 'helpPublic' : 'helpPrivate');
   $('#roomPlayers').innerHTML = NET.players.map((p, i) =>
-    `<div class="nm"><i style="background:${COLORS[i]}"></i><span class="pn">${esc(String(p.name))}${p.id === NET.id ? ' <small>you</small>' : ''}${p.id === NET.hostId ? ' <small>host</small>' : ''}</span><small>${+p.lb || 14} lb</small></div>`).join('');
+    `<div class="nm"><i style="background:${COLORS[i]}"></i><span class="pn">${esc(String(p.name))}${p.id === NET.id ? ` <small>${t('youTag')}</small>` : ''}${p.id === NET.hostId ? ` <small>${t('hostTag')}</small>` : ''}</span><small>${wLabel(+p.lb || 14)}</small></div>`).join('');
   const go = $('#goBtn'), n = NET.players.length;
-  go.disabled = !NET.host || n < 2; go.textContent = !NET.host ? 'Waiting for host' : n < 2 ? 'Waiting for players' : 'Start game';
+  go.disabled = !NET.host || n < 2; go.textContent = t(!NET.host ? 'waitHost' : n < 2 ? 'waitPlayers' : 'start');
 }
-$('#myLb').innerHTML = WEIGHTS.map(w => `<option value="${w}"${w === 14 ? ' selected' : ''}>${w} lb</option>`).join('');
 try { $('#myName').value = localStorage.getItem('ub_name') || ''; } catch (_) {}
 $('#myName').addEventListener('input', () => { try { localStorage.setItem('ub_name', $('#myName').value); } catch (_) {} });
 $('#mode').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   showView(b.dataset.m); netMsg('');
-  if (b.dataset.m === 'online') { netMsg('Connecting…'); netConnect(connectedBroker()).then(() => netMsg(''), err => netMsg(err.message)); }
+  if (b.dataset.m === 'online') { netMsg('connecting'); netConnect(connectedBroker()).then(() => netMsg(''), err => netMsg(err.message)); }
 });
 $('#mkPublic').onclick = () => createRoom(true);
 $('#mkPrivate').onclick = () => createRoom(false);
@@ -1110,6 +1195,12 @@ $('#roomList').addEventListener('click', e => { const c = e.target.dataset?.code
 $('#goBtn').onclick = hostStart;
 $('#leaveBtn').onclick = () => leaveRoom();
 setInterval(() => { if (!$('#vOnline').classList.contains('hidden') && G.state === 'menu') renderLobby(); }, 3000);
+$('#lang').addEventListener('click', e => {
+  const l = e.target.closest('button')?.dataset.l; if (!l || l === LANG) return;
+  LANG = l; try { localStorage.setItem('ub_lang', l); } catch (_) {}
+  applyLang();
+});
+applyLang();
 $('#muteBtn').onclick = () => {
   muted = !muted; if (master) master.gain.value = muted ? 0 : .8;
   $('#sndOn').setAttribute('d', muted ? 'M16 9l5 6M21 9l-5 6' : 'M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13');
@@ -1167,7 +1258,7 @@ function release() {
   if (G.state !== 'aim') return;
   const v = peakVel(performance.now());
   if (v) launch(v);
-  else settle(velHist.length && performance.now() - velHist[velHist.length - 1].t < 120 ? '<b>Flick forward</b> (up) and let go to throw' : undefined);
+  else settle(velHist.length && performance.now() - velHist[velHist.length - 1].t < 120 ? t('hintFlick') : undefined);
 }
 function launch(v, loft = false) {
   dragging = false; canvas.classList.remove('drag');
