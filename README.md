@@ -1,8 +1,10 @@
 # Ultimate Bowl
 
-A 3D ten-pin bowling game that runs in the browser — Three.js for rendering, Rapier for physics. Everything lives in a single `index.html`.
+[![Play now](https://img.shields.io/badge/%E2%96%B6%20Play%20now-in%20your%20browser-3ddcff?style=for-the-badge)](https://therealufobird.github.io/Ultimate-Bowl/)
 
-**Play online:** https://therealufobird.github.io/Ultimate-Bowl/
+**▶ Play instantly: https://therealufobird.github.io/Ultimate-Bowl/** — no download or install needed.
+
+A 3D ten-pin bowling game that runs in the browser — Three.js for rendering, Rapier for physics. Everything lives in a single `index.html`.
 
 ## Play locally
 
