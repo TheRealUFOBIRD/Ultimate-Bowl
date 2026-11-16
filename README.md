@@ -18,6 +18,15 @@ Then open http://localhost:8123. The 3D and physics libraries load from a CDN, s
 - A flick that carries past the foul line releases the ball there as a lofted throw.
 - **Spin:** slider, `A` / `D` (or arrow keys), or the mouse wheel. `S` resets it. Curving the swipe adds spin too.
 
+## Online multiplayer
+
+Pick **Online** in the menu, enter a name, then either create a room or join one:
+
+- **Public** rooms appear in everyone's public room list.
+- **Private** rooms are only reachable with their 5-character code.
+
+Up to 4 players per room; the host starts the game. There is no game server: players exchange messages through a public MQTT broker, and the player whose turn it is simulates the throw for everyone.
+
 ## Features
 
 - 1–4 players, hot-seat, full ten-pin scoring including 10th-frame bonus balls
