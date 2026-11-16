@@ -3,13 +3,16 @@
 <head>
 <meta charset="utf-8">
 <title>Ultimate Bowl</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#07080d">
 <style>
   :root{ --bg:#07080d; --s1:rgba(14,17,26,.6); --s2:rgba(255,255,255,.07); --hud:rgba(12,15,23,.5); --line:rgba(255,255,255,.1); --txt:#f2f4fa; --dim:#a0a7bd; --a:#3ddcff; --gold:#ffc94d; }
   /* frosted glass: flat tint, blurred backdrop, no borders or glows */
   .panel,#board,#spin,#hint,#stat,#tools button{-webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%)}
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--txt);
     font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
     -webkit-user-select:none;user-select:none}
   canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
@@ -112,12 +115,32 @@
   .rk.win .sc,.rk.win .pos{color:var(--gold)}
   .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
-  @media (max-width:640px){
-    .panel{padding:24px}
-    #hint{white-space:normal;text-align:center;width:calc(100% - 32px)}
-    #stat{bottom:62px}
-    #tools{top:auto;bottom:16px;right:10px}
-    #spinIn{width:30vw}
+  /* ---------- phones / touch ---------- */
+  #menu,#results{pointer-events:auto;overflow-y:auto;overscroll-behavior:contain}
+  .center>.panel{margin:auto}
+  #hud{--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px)}
+  @media (pointer:coarse){                      /* finger-sized targets */
+    #spin{height:46px}
+    #spinIn{height:6px;border-radius:3px}
+    #spinIn::-webkit-slider-thumb{width:24px;height:24px}
+    #spinIn::-moz-range-thumb{width:24px;height:24px}
+    #tools button{width:44px;height:44px}
+    .seg button,.nm,.btn{min-height:46px}
+  }
+  @media (max-width:640px){                     /* portrait phone: controls along the bottom edge */
+    .panel{padding:22px}
+    #boardWrap{top:calc(8px + env(safe-area-inset-top,0px))}
+    #tools{top:auto;bottom:calc(12px + var(--sb));right:calc(10px + var(--sr))}
+    #spin{left:calc(10px + var(--sl));right:calc(100px + var(--sr));bottom:calc(12px + var(--sb));transform:none;gap:10px;padding:0 12px}
+    #spinIn{flex:1;width:auto;min-width:0}
+    #spinVal{width:62px}
+    #hint{bottom:calc(70px + var(--sb));white-space:normal;text-align:center;max-width:calc(100% - 24px)}
+    #stat{right:calc(10px + var(--sr));bottom:calc(70px + var(--sb))}
+  }
+  @media (max-height:460px){                    /* landscape phone */
+    .panel{padding:18px 22px}
+    .tag{margin-bottom:14px} .how{display:none} #names{margin-bottom:14px}
+    #banner{padding-bottom:4vh}
   }
 </style>
 <script type="importmap">
@@ -143,7 +166,7 @@
     </div>
     <div id="names"></div>
     <button class="btn" id="startBtn">Start game</button>
-    <div class="how">Drag the ball, flick forward and let go to throw.<br>Add spin with the slider, A / D or the mouse wheel.</div>
+    <div class="how" id="how">Drag the ball, flick forward and let go to throw.<br>Add spin with the slider, A / D or the mouse wheel.</div>
   </div>
 </div>
 
@@ -214,7 +237,9 @@ const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '
    ===================================================================== */
 const canvas = $('#c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const TOUCH = matchMedia('(pointer: coarse)').matches;      // phone / tablet: lighter rendering, touch wording
+renderer.setPixelRatio(Math.min(devicePixelRatio, TOUCH ? 1.5 : 2));
+if (TOUCH) $('#how').innerHTML = 'Drag the ball with your finger, flick forward and let go to throw.<br>Add spin with the slider.';
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -231,7 +256,7 @@ const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 80
 const camLook = new THREE.Vector3(0, .3, -18.6);
 camera.position.set(0, 1, -14);
 
-const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: TOUCH ? 2 : 4 });
 const composer = new EffectComposer(renderer, rt);
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.22, 0.6, 1.0);
@@ -242,7 +267,7 @@ composer.addPass(new OutputPass());
 scene.add(new THREE.HemisphereLight(0xc4d6ff, 0x24160a, 0.6));
 const sun = new THREE.DirectionalLight(0xfff0dc, 2.3);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(TOUCH ? 1024 : 2048, TOUCH ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 0.5, far: 20 });
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.012;
 scene.add(sun, sun.target);
@@ -390,7 +415,7 @@ const laneLen = -LANE_END, laneMid = LANE_END / 2;
 {
   // main lane: semi-transparent polished wood over a planar mirror
   const mirror = new Reflector(new THREE.PlaneGeometry(LANE_W, laneLen), {
-    textureWidth: Math.min(1024, innerWidth), textureHeight: Math.min(1024, innerHeight), color: 0x8a8a8a, clipBias: 0.002
+    textureWidth: Math.min(TOUCH ? 512 : 1024, innerWidth), textureHeight: Math.min(TOUCH ? 512 : 1024, innerHeight), color: 0x8a8a8a, clipBias: 0.002
   });
   mirror.rotation.x = -Math.PI / 2; mirror.position.set(0, -0.004, laneMid); scene.add(mirror);
   const wood = plane(LANE_W, laneLen, std({ map: laneTex, roughness: .2, transparent: true, opacity: .8, envMapIntensity: .35 }), 0, 0, laneMid);
@@ -808,12 +833,13 @@ function sample(e) {
   const now = performance.now();
   samples.push({ t: now, x: e.clientX, y: e.clientY });
   while (samples.length > 2 && now - samples[0].t > 600) samples.shift();
-  ptr.x = e.clientX; ptr.y = e.clientY;
+  // on a touch screen the ball sits a little above the fingertip so it stays visible
+  ptr.x = e.clientX; ptr.y = e.clientY - (e.pointerType === 'touch' ? 44 : 0);
   const beyond = trackPointer();
   // swipe velocity over the last ~100 ms, in screen-heights per second (vy + = forward)
   const b = samples[samples.length - 1], a = samples.find(s => b.t - s.t <= 100) ?? b, dt = (b.t - a.t) / 1000;
   if (dt >= .012) {
-    const H = canvas.clientHeight || innerHeight;
+    const H = flickRef();
     velHist.push({ t: now, vx: (b.x - a.x) / dt / H, vy: -(b.y - a.y) / dt / H });
     while (velHist.length && now - velHist[0].t > 250) velHist.shift();
   }
@@ -822,6 +848,9 @@ function sample(e) {
   if (!beyond) armed = true;                           // only once the ball has actually been held behind the line
   else if (armed && dragging && G.state === 'aim') { const v = peakVel(now); if (v) launch(v, true); }
 }
+// flick speed is measured against the screen height; on a tall portrait phone a thumb can't cover that
+// much, so the reference is capped relative to the width
+function flickRef() { const h = canvas.clientHeight || innerHeight, w = canvas.clientWidth || innerWidth; return Math.min(h, w * 1.25); }
 function peakVel(now) {                                // strongest forward swipe in the last 160 ms
   let best = null;
   for (const v of velHist) if (now - v.t <= 160 && v.vy >= .4 && (!best || v.vy > best.vy)) best = v;
@@ -836,14 +865,16 @@ function trackPointer() {                              // put the ball exactly u
   if (ray.ray.intersectPlane(floorPlane, hit)) { aimTarget.set(clamp(hit.x, -.5, .5), BALL_R, clamp(hit.z, .5, 2.6)); return hit.z < .5; }
   aimTarget.z = .5; return true;
 }
+let activeId = null;                                   // one finger / button drives the throw; extra touches are ignored
 canvas.addEventListener('pointerdown', e => {
-  if (G.state !== 'aim') return;
+  if (G.state !== 'aim' || dragging || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  e.preventDefault(); activeId = e.pointerId;
   initAudio();
   dragging = true; samples = []; velHist = []; armed = false; canvas.classList.add('drag');
   try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
   sample(e);
 });
-canvas.addEventListener('pointermove', e => { if (dragging) sample(e); });
+canvas.addEventListener('pointermove', e => { if (dragging && e.pointerId === activeId) sample(e); });
 function release() {
   if (!dragging) return;
   dragging = false; canvas.classList.remove('drag');
@@ -870,8 +901,15 @@ function launch(v, loft = false) {
   throwBall(speed, clamp(dir * .2, -.12, .12), spin, loft);
 }
 function settle(msg) { aimTarget.z = clamp(aimTarget.z, 1.2, 2.6); if (msg) showHint(msg); }
-canvas.addEventListener('pointerup', release);
-canvas.addEventListener('pointercancel', release);
+canvas.addEventListener('pointerup', e => { if (e.pointerId === activeId) release(); });
+canvas.addEventListener('pointercancel', e => {         // the browser took the touch away (system gesture): put the ball down, don't throw
+  if (e.pointerId !== activeId || !dragging) return;
+  dragging = false; canvas.classList.remove('drag'); settle();
+});
+// keep the browser from scrolling, zooming or opening menus while playing
+for (const ev of ['contextmenu', 'gesturestart', 'dblclick']) addEventListener(ev, e => e.preventDefault());
+canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+addEventListener('orientationchange', () => setTimeout(resize, 250));
 
 /* =====================================================================
    Main loop
@@ -926,7 +964,9 @@ function updateCamera(dt) {
   if (G.state === 'menu') {
     tp.set(Math.sin(time * .22) * 1.1, .85 + Math.sin(time * .17) * .15, -14.6); tl.set(0, .22, -18.7); kp = 1.2;
   } else if (G.state === 'aim') {
-    tp.set(0, portrait ? 1.9 : 1.55, portrait ? 6.1 : 5.2); tl.set(0, 0, -4); kp = 5; kl = 6;   // fixed, so the ball stays under the cursor
+    if (portrait) { tp.set(0, 1.7, 4.6); tl.set(0, 0, -3); }      // closer on a phone: bigger ball, taller drag area for a thumb
+    else { tp.set(0, 1.55, 5.2); tl.set(0, 0, -4); }
+    kp = 5; kl = 6;   // fixed, so the ball stays under the cursor
   } else if (G.state === 'roll' && !roll.isDone) {
     const b = ballMesh.position;
     tp.set(b.x * .35, 1.0, Math.max(b.z + 3, -14.4)); tl.set(b.x * .5, .22, Math.max(b.z - 3.5, -18.7)); kp = 5; kl = 6;
